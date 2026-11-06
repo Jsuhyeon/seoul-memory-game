@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>서울 짝 맞추기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#eef2f6; --ink:#16203d; --sub:#55607c; --panel:#ffffff;
+  --back:#1f2a5a; --back2:#2a3a7a; --line:#1f9d8f; --hit:#d9453b; --face:#fffdf8;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10162b; --ink:#eef1fb; --sub:#9aa5c6; --panel:#1a2242;
+    --back:#2a3a7a; --back2:#3a4d9a; --face:#f3efe4; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10162b; --ink:#eef1fb; --sub:#9aa5c6; --panel:#1a2242;
+  --back:#2a3a7a; --back2:#3a4d9a; --face:#f3efe4; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center}
+main{width:100%;max-width:480px;padding:20px 16px 32px}
+h1{font-family:"Black Han Sans","Noto Sans KR",sans-serif;font-weight:400;font-size:2.2rem;margin:4px 0 2px;letter-spacing:.02em}
+.lead{margin:0 0 16px;color:var(--sub);font-size:.95rem}
+.bar{display:flex;gap:8px;margin-bottom:14px}
+.stat{flex:1;background:var(--panel);border-radius:10px;padding:8px 10px;border-left:4px solid var(--line)}
+.stat b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.78rem;color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(var(--cols,4),1fr);gap:8px}
+.card{position:relative;aspect-ratio:3/4;border:0;padding:0;background:none;cursor:pointer;perspective:600px;border-radius:10px}
+.card:focus-visible{outline:3px solid var(--line);outline-offset:2px}
+.in{position:absolute;top:0;left:0;right:0;bottom:0;-webkit-transform-style:preserve-3d;transform-style:preserve-3d;-webkit-transition:-webkit-transform .4s;transition:transform .4s}
+.card.open .in,.card.done .in{-webkit-transform:rotateY(180deg);transform:rotateY(180deg)}
+.f,.b{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:10px;-webkit-backface-visibility:hidden;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.b{background:
+  repeating-linear-gradient(45deg,transparent 0 9px,rgba(255,255,255,.08) 9px 10px),
+  linear-gradient(160deg,var(--back2),var(--back));
+  border:2px solid var(--line)}
+.b::after{content:"";width:34%;aspect-ratio:1;border:2px solid var(--line);transform:rotate(45deg);border-radius:4px}
+.f{background:var(--face);-webkit-transform:rotateY(180deg);transform:rotateY(180deg);color:#16203d;border:2px solid transparent}
+.f .e{font-size:clamp(1.6rem,9vw,2.3rem);line-height:1}
+.f .n{font-size:.7rem;margin-top:6px;font-weight:700}
+.card.done .f{border-color:var(--hit)}
+.row{display:flex;gap:8px;margin-top:16px}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button{flex:1;font:inherit;font-size:.9rem;font-weight:700;padding:8px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--line);color:#fff}
+.seg button:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.card.done .f{animation:pop .45s}
+@keyframes pop{0%{transform:rotateY(180deg) scale(1)}50%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(180deg) scale(1)}}
+.card.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.conf{position:fixed;top:-2rem;font-size:1.6rem;pointer-events:none;animation:fall 2.2s linear forwards;z-index:9}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+button.ctl{flex:1;font:inherit;font-weight:700;padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button.ctl.main{background:var(--line);color:#fff}
+button.ctl:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.msg{min-height:1.4em;margin:14px 0 0;font-weight:700;color:var(--hit)}
+@media (prefers-reduced-motion:reduce){.in{transition:none}.card.done .f,.card.shake{animation:none}.conf{display:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>서울 짝 맞추기</h1>
+  <p class="lead">같은 그림 두 장을 찾아보세요. 적은 횟수로 빨리 끝낼수록 좋은 기록이에요.</p>
+  <div class="seg" role="group" aria-label="난이도">
+    <button type="button" data-level="easy" aria-pressed="false">쉬움</button>
+    <button type="button" data-level="normal" aria-pressed="true">보통</button>
+    <button type="button" data-level="hard" aria-pressed="false">어려움</button>
+  </div>
+  <div class="bar">
+    <div class="stat"><b id="moves">0</b><span>시도 횟수</span></div>
+    <div class="stat"><b id="time">0:00</b><span>걸린 시간</span></div>
+    <div class="stat"><b id="best">-</b><span>최고 기록</span></div>
+  </div>
+  <div class="grid" id="grid" role="group" aria-label="카드 게임판"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <div class="row">
+    <button class="ctl main" id="restart">새로 시작</button>
+    <button class="ctl" id="sound" aria-pressed="true">효과음 켜짐</button>
+    <button class="ctl" id="theme">화면 모드</button>
+  </div>
+</main>
+<script>
+(function(){
+  var ITEMS=[["🏯","경복궁"],["🗼","남산타워"],["👘","한복"],["🍙","김밥"],["🌶️","떡볶이"],["🚇","지하철"],["🌉","한강"],["🍁","단풍"],["🥢","비빔밥"],["🏮","연등"]];
+  var LEVELS={easy:{pairs:6,cols:3},normal:{pairs:8,cols:4},hard:{pairs:10,cols:4}};
+  var level="normal",ac=null,soundOn=true;
+  var grid=document.getElementById("grid"),movesEl=document.getElementById("moves"),
+      timeEl=document.getElementById("time"),bestEl=document.getElementById("best"),msg=document.getElementById("msg");
+  var first=null,lock=false,moves=0,found=0,sec=0,timer=null;
+
+  function readBest(){try{var v=localStorage.getItem("seoul-best-"+level);return v?JSON.parse(v):null}catch(e){return null}}
+  function saveBest(o){try{localStorage.setItem("seoul-best-"+level,JSON.stringify(o))}catch(e){}}
+  function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+  function showBest(){var b=readBest();bestEl.textContent=b?b.moves+"회 · "+fmt(b.sec):"-"}
+  function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+  function stop(){if(timer){clearInterval(timer);timer=null}}
+  function startTimer(){if(timer)return;timer=setInterval(function(){sec++;timeEl.textContent=fmt(sec)},1000)}
+
+  function build(){
+    stop();first=null;lock=false;moves=0;found=0;sec=0;
+    movesEl.textContent="0";timeEl.textContent="0:00";msg.textContent="";grid.innerHTML="";
+    document.querySelectorAll(".conf").forEach(function(n){n.remove()});
+    var set=ITEMS.slice(0,LEVELS[level].pairs);
+    grid.style.setProperty("--cols",LEVELS[level].cols);
+    shuffle(set.concat(set)).forEach(function(it,i){
+      var c=document.createElement("button");
+      c.className="card";c.type="button";c.dataset.key=it[1];
+      c.setAttribute("aria-label","카드 "+(i+1)+"번, 뒤집지 않음");
+      c.innerHTML='<div class="in"><div class="b"></div><div class="f"><span class="e">'+it[0]+'</span><span class="n">'+it[1]+'</span></div></div>';
+      c.addEventListener("click",function(){flip(c,i)});
+      grid.appendChild(c);
+    });
+    showBest();
+  }
+
+  function flip(c,i){
+    if(lock||c.classList.contains("open")||c.classList.contains("done"))return;
+    startTimer();tone("flip");
+    c.classList.add("open");
+    c.setAttribute("aria-label","카드 "+(i+1)+"번, "+c.dataset.key);
+    if(!first){first=c;return}
+    moves++;movesEl.textContent=moves;lock=true;
+    if(first.dataset.key===c.dataset.key){
+      first.classList.replace("open","done");c.classList.replace("open","done");tone("match");
+      first=null;lock=false;found++;
+      if(found===LEVELS[level].pairs)win();
+    }else{
+      var a=first;first=null;tone("miss");a.classList.add("shake");c.classList.add("shake");
+      setTimeout(function(){
+        a.classList.remove("open","shake");c.classList.remove("open","shake");
+        a.setAttribute("aria-label","카드, 뒤집지 않음");c.setAttribute("aria-label","카드, 뒤집지 않음");
+        lock=false;
+      },800);
+    }
+  }
+
+  function win(){
+    stop();
+    var b=readBest(),record=!b||moves<b.moves||(moves===b.moves&&sec<b.sec);
+    if(record){saveBest({moves:moves,sec:sec});showBest()}
+    tone("win");confetti();
+    msg.textContent=(record?"새 최고 기록이에요! ":"모두 맞췄어요! ")+moves+"번 만에, "+fmt(sec)+" 걸렸어요.";
+  }
+
+  function tone(k){
+    if(!soundOn)return;
+    try{
+      ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+      var seq={flip:[[520,.06]],match:[[660,.1],[880,.14]],miss:[[220,.16]],win:[[523,.12],[659,.12],[784,.12],[1047,.25]]}[k];
+      var t=ac.currentTime;
+      seq.forEach(function(n){
+        var o=ac.createOscillator(),g=ac.createGain();
+        o.type=k==="miss"?"triangle":"sine";o.frequency.value=n[0];
+        g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.18,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+n[1]);
+        o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+n[1]+.02);t+=n[1]*.9;
+      });
+    }catch(e){}
+  }
+  function confetti(){
+    var em=["🎉","✨","🍁","🏯"];
+    for(var i=0;i<24;i++){
+      var s=document.createElement("span");
+      s.className="conf";s.setAttribute("aria-hidden","true");
+      s.textContent=em[i%em.length];
+      s.style.left=Math.random()*96+"%";
+      s.style.animationDelay=(Math.random()*.8)+"s";
+      document.body.appendChild(s);
+      setTimeout(function(n){return function(){n.remove()}}(s),3500);
+    }
+  }
+  document.querySelectorAll(".seg button").forEach(function(b){
+    b.addEventListener("click",function(){
+      level=b.dataset.level;
+      document.querySelectorAll(".seg button").forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false")});
+      build();
+    });
+  });
+  var sb=document.getElementById("sound");
+  sb.addEventListener("click",function(){
+    soundOn=!soundOn;
+    sb.setAttribute("aria-pressed",soundOn?"true":"false");
+    sb.textContent=soundOn?"효과음 켜짐":"효과음 꺼짐";
+  });
+  document.getElementById("restart").addEventListener("click",build);
+  document.getElementById("theme").addEventListener("click",function(){
+    var r=document.documentElement,dark=r.getAttribute("data-theme")==="dark"||
+      (!r.getAttribute("data-theme")&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+    r.setAttribute("data-theme",dark?"light":"dark");
+  });
+  build();
+})();
+</script>
+</body>
+</html>
