@@ -1,0 +1,13 @@
+`Ctrl+`` (숫자 1 왼쪽의 백틱 키)를 누르거나, 위쪽 메뉴 Terminal → New Terminal을
+git config --global user.name "본인이름이나닉네임"
+git config --global user.email "본인이메일"
+
+Ctrl+Shift+P에서 Developer: Reload Window
+
+
+git status
+git push
+
+Ctrl+Shift+P를 누르세요.
+Simple Browser: Show를 입력해 선택하세요.
+https://github.com/Jsuhyeon/seoul-memory-game을 입력하고 엔터를 누르세요.
